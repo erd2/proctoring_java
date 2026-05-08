@@ -1,0 +1,55 @@
+// Root build.gradle for multi-module Proctoring System
+// Centralizes plugin management and common configuration.
+
+plugins {
+    id 'base'
+    // Make dependency-management plugin available for subprojects without version duplication
+    id 'io.spring.dependency-management' version '1.1.6' apply false
+}
+
+group = 'com.aiu.proctoring'
+version = '1.0.0'
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    // Apply common plugins to all subprojects
+    apply plugin: 'java-library'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+    }
+
+    // Import Spring Boot BOM for consistent dependency versions
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:3.3.4"
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-parameters']
+    }
+
+    tasks.withType(Test) {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
+    }
+}
+
+// Convenience tasks
+tasks.register("buildAll") {
+    dependsOn subprojects.collect { it.path + ":build" }
+}
+
+tasks.register("testAll") {
+    dependsOn subprojects.collect { it.path + ":test" }
+}

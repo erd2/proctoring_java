@@ -1,0 +1,25 @@
+// Domain module — pure Java, no Spring plugins needed
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies {
+    // JPA annotations
+    compileOnly 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+
+    // Annotations for validation and JSON
+    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'com.fasterxml.jackson.core:jackson-annotations'
+
+    // Lombok for boilerplate reduction (optional)
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

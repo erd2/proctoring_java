@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: proctoring-postgres
+    environment:
+      POSTGRES_DB: proctoring_db
+      POSTGRES_USER: proctoring_user
+      POSTGRES_PASSWORD: proctoring_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./proctoring-infrastructure/src/main/resources/db/migration:/docker-entrypoint-initdb.d
+    networks:
+      - proctoring-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proctoring_user -d proctoring_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: proctoring-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - proctoring-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Apache Kafka with ZooKeeper (Confluent)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: proctoring-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - proctoring-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: proctoring-kafka
+    depends_on:
+      zookeeper:
+        condition: service_started
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - proctoring-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # Proctoring System Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: proctoring-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/proctoring_db
+      SPRING_DATASOURCE_USERNAME: proctoring_user
+      SPRING_DATASOURCE_PASSWORD: proctoring_pass
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_please_change_in_production_2026}
+    networks:
+      - proctoring-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+
+networks:
+  proctoring-network:
+    driver: bridge

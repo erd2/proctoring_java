@@ -1,0 +1,45 @@
+# Bytecode
+target/
+build/
+out/
+*.jar
+*.war
+*.ear
+*.class
+
+# Gradle
+.gradle/
+gradle-app/
+!gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test
+coverage/
+.jacoco/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.swp
+*~

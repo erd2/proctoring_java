@@ -1,0 +1,24 @@
+# Ignore Gradle
+.gradle
+build
+gradle-app
+
+# Ignore IDE settings
+.idea
+*.iml
+.vscode
+.project
+.classpath
+
+# Ignore local env
+.env
+.env.local
+
+# Ignore test reports
+coverage/
+*.jacoco
+
+# Misc
+README.md (included for build context)
+.git
+Dockerfile (optional)
