@@ -3,21 +3,14 @@ FROM eclipse-temurin:17-jdk-alpine AS builder
 
 WORKDIR /app
 
-# Install Gradle
-RUN apk add --no-cache wget unzip
-RUN wget https://services.gradle.org/distributions/gradle-8.10-bin.zip -O /tmp/gradle.zip && \
-    unzip -d /opt/gradle /tmp/gradle.zip && \
-    ln -s /opt/gradle/gradle-8.10/bin/gradle /usr/local/bin/gradle && \
-    rm /tmp/gradle.zip
-
-# Copy source
+# Copy source and use the repository Gradle wrapper for reproducible builds
 COPY . .
 
-# Make gradlew executable (if exists)
-RUN chmod +x ./gradlew || true
+# Make gradlew executable
+RUN chmod +x ./gradlew
 
 # Build application
-RUN gradle --no-daemon clean build -x test
+RUN ./gradlew --no-daemon clean build -x test
 
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
