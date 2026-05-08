@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: proctoring_user
       POSTGRES_PASSWORD: proctoring_pass
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./proctoring-infrastructure/src/main/resources/db/migration:/docker-entrypoint-initdb.d

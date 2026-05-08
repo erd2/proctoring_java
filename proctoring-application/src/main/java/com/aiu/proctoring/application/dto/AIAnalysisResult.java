@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AIAnalysisResult {
     private String sessionId;
+    private String studentId;
     private String violationType;
     private Double confidence;
     private Long timestamp;

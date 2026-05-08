@@ -62,15 +62,35 @@ async function request(path, options = {}) {
   return data;
 }
 
+function renderHealthDetails(data) {
+  const components = data.components || {};
+  const defaultValue = (item) => item?.status || "UNKNOWN";
+
+  document.querySelector("#healthStatus").textContent = data.status || "UNKNOWN";
+  document.querySelector("#healthDb").textContent = defaultValue(components.db);
+  document.querySelector("#healthRedis").textContent = defaultValue(components.redis || components.redisHealth);
+  document.querySelector("#healthKafka").textContent = defaultValue(components.kafka);
+  document.querySelector("#healthAi").textContent = defaultValue(components.ai);
+  document.querySelector("#healthTimestamp").textContent = new Date().toLocaleString();
+  document.querySelector("#healthRaw").textContent = JSON.stringify(data, null, 2);
+}
+
 async function checkHealth() {
   try {
-    const data = await request("/health");
+    const data = await request("/actuator/health");
     const badge = document.querySelector("#systemStatus");
-    badge.textContent = "System UP";
-    badge.classList.add("ok");
-    log("Health", data);
+    const status = data.status || "UNKNOWN";
+
+    badge.textContent = status === "UP" ? "System UP" : `System ${status}`;
+    badge.classList.toggle("ok", status === "UP");
+    renderHealthDetails(data);
+    log("Actuator health", data);
   } catch (error) {
-    document.querySelector("#systemStatus").textContent = "Unavailable";
+    const badge = document.querySelector("#systemStatus");
+    badge.textContent = "Unavailable";
+    badge.classList.remove("ok");
+    document.querySelector("#healthStatus").textContent = "DOWN";
+    document.querySelector("#healthRaw").textContent = JSON.stringify(error, null, 2);
     log("Health error", error);
   }
 }
@@ -157,7 +177,10 @@ document.querySelector("#sessionForm").addEventListener("submit", async event =>
   event.preventDefault();
   const formValues = values(event.currentTarget);
   const payload = {
-    ...formValues,
+    studentIds: formValues.studentIds.split(',').map(id => id.trim()).filter(id => id),
+    groupName: formValues.groupName || null,
+    disciplineCode: formValues.disciplineCode,
+    disciplineName: formValues.disciplineName,
     scheduledStart: formValues.scheduledStart,
     scheduledEnd: formValues.scheduledEnd,
     maxViolations: Number(formValues.maxViolations),
@@ -180,6 +203,7 @@ document.querySelector("#violationForm").addEventListener("submit", async event 
   const formValues = values(event.currentTarget);
   const params = new URLSearchParams({
     sessionId: formValues.sessionId,
+    studentId: formValues.studentId,
     type: formValues.type,
     confidence: formValues.confidence,
     frameTimestamp: String(Date.now()),
@@ -252,6 +276,7 @@ document.querySelector("#clearLog").addEventListener("click", () => {
 
 renderUser();
 checkHealth();
+document.querySelector("#refreshHealth").addEventListener("click", checkHealth);
 if (state.token) {
   loadSessions();
 }

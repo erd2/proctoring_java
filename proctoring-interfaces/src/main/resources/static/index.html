@@ -58,10 +58,32 @@
     </section>
 
     <section class="panel">
+      <div class="section-head">
+        <h2>System health</h2>
+        <button class="secondary" id="refreshHealth" type="button">Refresh</button>
+      </div>
+      <div class="health-summary">
+        <div>Status: <strong id="healthStatus">Checking...</strong></div>
+        <div>Last checked: <span id="healthTimestamp">—</span></div>
+      </div>
+      <div class="health-grid" id="healthDetails">
+        <div class="health-item"><strong>Database</strong><span id="healthDb">—</span></div>
+        <div class="health-item"><strong>Redis</strong><span id="healthRedis">—</span></div>
+        <div class="health-item"><strong>Kafka</strong><span id="healthKafka">—</span></div>
+        <div class="health-item"><strong>AI</strong><span id="healthAi">—</span></div>
+        <div class="health-item wide">
+          <strong>Raw details</strong>
+          <pre id="healthRaw">Waiting for actuator health...</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Create Exam Session</h2>
-      <p class="hint">Sign in as a PROCTOR. Paste a STUDENT user ID into the field below.</p>
+      <p class="hint">Sign in as a PROCTOR. Paste STUDENT user IDs (comma-separated) into the field below.</p>
       <form id="sessionForm" class="stack">
-        <label>Student ID<input name="studentId" placeholder="UUID from registered student" required></label>
+        <label>Student IDs<input name="studentIds" placeholder="UUID1,UUID2,UUID3 from registered students" required></label>
+        <label>Group name<input name="groupName" placeholder="Optional group name"></label>
         <div class="two">
           <label>Course code<input name="disciplineCode" value="CS101" required></label>
           <label>Course name<input name="disciplineName" value="Remote Exam" required></label>
@@ -83,6 +105,7 @@
       <p class="hint">Use an ACTIVE session ID. Students cannot create sessions.</p>
       <form id="violationForm" class="stack">
         <label>Session ID<input name="sessionId" required></label>
+        <label>Student ID<input name="studentId" placeholder="UUID of the student to report violation for" required></label>
         <div class="two">
           <label>Type<input name="type" value="FACE_NOT_VISIBLE" required></label>
           <label>Confidence<input name="confidence" type="number" min="0" max="1" step="0.01" value="0.82"></label>

@@ -12,6 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.UUID;
 
 /**
  * Kafka message processor for AI analysis tasks.
@@ -48,13 +49,12 @@ public class AIKafkaProcessor {
                 result.getConfidence() > 0.7) { // Threshold
 
                 Violation violation = Violation.builder()
-                    .id(com.aiu.proctoring.domain.value.ViolationId.generate())
+                    .id(UUID.randomUUID())
                     .type(result.getViolationType())
                     .confidence(result.getConfidence())
                     .frameTimestamp(result.getTimestamp())
                     .description(result.getDescription())
-                    .session(null) // Will be set by handler
-                    .detectedAt(java.time.LocalDateTime.now())
+                    .session(null) // Will be set by handler downstream
                     .build();
 
                 kafkaTemplate.send(VIOLATION_TOPIC, violation);

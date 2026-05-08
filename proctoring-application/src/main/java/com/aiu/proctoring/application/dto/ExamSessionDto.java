@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Exam session DTO for responses.
@@ -18,6 +19,9 @@ public class ExamSessionDto {
     private String id;
     private String studentId;
     private String studentName;
+    private List<String> participantIds;
+    private List<String> participantNames;
+    private String groupName;
     private String proctorId;
     private String proctorName;
     private String disciplineCode;

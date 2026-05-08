@@ -1,45 +1,46 @@
 package com.aiu.proctoring.domain.value;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Immutable ExamSession identifier value object.
  */
 @Embeddable
-@Getter
 @EqualsAndHashCode
 @ToString
 public class ExamSessionId implements Serializable {
 
-    @Convert(converter = UuidStringConverter.class)
-    @Column(name = "id", columnDefinition = "UUID")
-    private final String value;
+    @Column(name = "id", nullable = false)
+    private UUID value;
 
     protected ExamSessionId() {
         this.value = null;
     }
 
-    private ExamSessionId(String value) {
-        this.value = value;
+    private ExamSessionId(UUID value) {
+        this.value = Objects.requireNonNull(value, "ExamSessionId value cannot be null");
     }
 
     public static ExamSessionId generate() {
-        return new ExamSessionId(UUID.randomUUID().toString());
+        return new ExamSessionId(UUID.randomUUID());
     }
 
     public static ExamSessionId from(String value) {
-        return new ExamSessionId(value);
+        return new ExamSessionId(UUID.fromString(value));
+    }
+
+    public String getValue() {
+        return value != null ? value.toString() : null;
     }
 
     public boolean isNil() {
-        return value == null || value.isEmpty();
+        return value == null;
     }
 }

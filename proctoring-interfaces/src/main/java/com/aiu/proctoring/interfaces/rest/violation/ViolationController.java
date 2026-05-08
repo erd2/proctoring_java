@@ -44,6 +44,7 @@ public class ViolationController {
     @PostMapping
     public ResponseEntity<ApiResponse<ViolationDto>> reportViolation(
         @RequestParam String sessionId,
+        @RequestParam String studentId,
         @RequestParam String type,
         @RequestParam Double confidence,
         @RequestParam Long frameTimestamp,
@@ -52,7 +53,7 @@ public class ViolationController {
     ) {
         try {
             ViolationDto violation = violationService.reportViolation(
-                sessionId, type, confidence, frameTimestamp, description);
+                sessionId, studentId, type, confidence, frameTimestamp, description);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Violation reported", violation));
         } catch (Exception e) {

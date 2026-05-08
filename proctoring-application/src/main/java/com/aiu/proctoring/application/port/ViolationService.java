@@ -9,7 +9,7 @@ import java.util.List;
  */
 public interface ViolationService {
 
-    ViolationDto reportViolation(String sessionId, String type, Double confidence,
+    ViolationDto reportViolation(String sessionId, String studentId, String type, Double confidence,
                                   Long frameTimestamp, String description);
 
     List<ViolationDto> getSessionViolations(String sessionId);

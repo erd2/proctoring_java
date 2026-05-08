@@ -1,10 +1,11 @@
 package com.aiu.proctoring.domain.model;
 
-import com.aiu.proctoring.domain.value.ViolationId;
+import com.aiu.proctoring.domain.value.ExamSessionId;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Violation entity representing AI-detected academic integrity breaches.
@@ -17,12 +18,17 @@ import java.time.LocalDateTime;
 @Builder
 public class Violation {
 
-    @EmbeddedId
-    private ViolationId id;
+    @Id
+    @Column(name = "id", nullable = false, columnDefinition = "UUID")
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     private ExamSession session;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
 
     @Column(name = "violation_type", nullable = false, length = 50)
     private String type;
@@ -36,8 +42,9 @@ public class Violation {
     @Column(name = "description", length = 500)
     private String description;
 
-    @Column(name = "detected_at", nullable = false)
-    private LocalDateTime detectedAt;
+    @Builder.Default
+    @Column(name = "detected_at", nullable = false, updatable = false)
+    private LocalDateTime detectedAt = LocalDateTime.now();
 
     @Column(name = "reviewed_by", length = 100)
     private String reviewedBy;
@@ -53,7 +60,9 @@ public class Violation {
 
     @PrePersist
     protected void onCreate() {
-        detectedAt = LocalDateTime.now();
+        if (detectedAt == null) {
+            detectedAt = LocalDateTime.now();
+        }
     }
 
     public void review(String reviewer, boolean falsePositive, String notes) {

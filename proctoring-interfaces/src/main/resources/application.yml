@@ -5,10 +5,8 @@ server:
     include-binding-errors: always
 
 spring:
-  application:
-    name: proctoring-system
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/proctoring_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/proctoring_db}
     username: ${SPRING_DATASOURCE_USERNAME:proctoring_user}
     password: ${SPRING_DATASOURCE_PASSWORD:proctoring_pass}
     driver-class-name: org.postgresql.Driver

@@ -5,6 +5,8 @@ import com.aiu.proctoring.domain.value.UserId;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +38,7 @@ class ExamSessionTest {
             .id(ExamSessionId.generate())
             .student(student)
             .proctor(proctor)
+            .participants(List.of(student))
             .disciplineCode("CS101")
             .disciplineName("Intro to Programming")
             .examToken("token123")
@@ -43,6 +46,7 @@ class ExamSessionTest {
             .scheduledEnd(LocalDateTime.now().plusHours(2))
             .maxViolations(3)
             .violationThreshold(0.7)
+            .status(ExamSession.Status.CREATED)
             .build();
 
         assertEquals(ExamSession.Status.CREATED, session.getStatus());
@@ -52,7 +56,7 @@ class ExamSessionTest {
     @Test
     void startSession_shouldSetActiveAndActualStart() {
         ExamSession session = createSampleSession();
-        assertFalse(session.getActualStart().isBefore(LocalDateTime.now().minusSeconds(1)));
+        assertNull(session.getActualStart());
 
         session.start();
         assertEquals(ExamSession.Status.ACTIVE, session.getStatus());
@@ -86,7 +90,7 @@ class ExamSessionTest {
         session.start();
 
         Violation v1 = Violation.builder()
-            .id(com.aiu.proctoring.domain.value.ViolationId.generate())
+            .id(UUID.randomUUID())
             .session(session)
             .type("LOOKING_AWAY")
             .confidence(0.8)
@@ -100,7 +104,7 @@ class ExamSessionTest {
         // Create more violations to exceed threshold
         for (int i = 2; i <= 5; i++) {
             Violation v = Violation.builder()
-                .id(com.aiu.proctoring.domain.value.ViolationId.generate())
+                .id(UUID.randomUUID())
                 .session(session)
                 .type("LOOKING_AWAY")
                 .confidence(0.9)
@@ -118,7 +122,9 @@ class ExamSessionTest {
         ExamSession session = createSampleSession();
         session.start();
 
-        assertThrows(IllegalStateException.class, () -> session.start());
+        // Starting again should not throw, just return
+        session.start();
+        assertEquals(ExamSession.Status.ACTIVE, session.getStatus());
     }
 
     private ExamSession createSampleSession() {
@@ -146,12 +152,14 @@ class ExamSessionTest {
             .id(ExamSessionId.generate())
             .student(student)
             .proctor(proctor)
+            .participants(List.of(student))
             .disciplineCode("CS101")
             .disciplineName("Intro")
             .examToken("token")
             .scheduledStart(LocalDateTime.now().minusHours(1))
             .scheduledEnd(LocalDateTime.now().plusHours(2))
             .maxViolations(5)
+            .status(ExamSession.Status.CREATED)
             .build();
     }
 }

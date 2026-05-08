@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Exam session creation request.
@@ -15,7 +16,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class CreateSessionRequest {
-    private String studentId;
+    private List<String> studentIds;
+    private String groupName;
     private String disciplineCode;
     private String disciplineName;
     private LocalDateTime scheduledStart;

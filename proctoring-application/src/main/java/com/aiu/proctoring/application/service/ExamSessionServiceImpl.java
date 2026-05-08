@@ -39,19 +39,25 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             throw new DomainException("Only PROCTOR or ADMIN can create sessions");
         }
 
-        User student = userRepository.findById(UserId.from(request.getStudentId()))
-            .orElseThrow(() -> new DomainException("Student not found"));
+        List<User> participants = request.getStudentIds().stream()
+            .map(id -> userRepository.findById(UserId.from(id))
+                .orElseThrow(() -> new DomainException("Student not found: " + id)))
+            .collect(Collectors.toList());
 
-        if (!student.getRole().equals(User.Role.STUDENT)) {
-            throw new DomainException("User is not a STUDENT");
+        for (User participant : participants) {
+            if (!participant.getRole().equals(User.Role.STUDENT)) {
+                throw new DomainException("User is not a STUDENT: " + participant.getId());
+            }
         }
 
         String token = generateExamToken();
 
         ExamSession session = ExamSession.builder()
             .id(ExamSessionId.generate())
-            .student(student)
+            .student(participants.size() == 1 ? participants.get(0) : null) // For backward compatibility
             .proctor(proctor)
+            .groupName(request.getGroupName())
+            .participants(participants)
             .disciplineCode(request.getDisciplineCode())
             .disciplineName(request.getDisciplineName())
             .examToken(token)
@@ -78,7 +84,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         }
 
         session.start();
-        examSessionRepository.save(session);
+        // session already managed; changes auto-flushed
 
         return mapToDto(session);
     }
@@ -89,7 +95,11 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         ExamSession session = examSessionRepository.findByExamToken(request.getExamToken())
             .orElseThrow(() -> new DomainException("Invalid exam token"));
 
-        if (!session.getStudent().getId().getValue().equals(studentId)) {
+        boolean isParticipant = session.getParticipants() != null &&
+            session.getParticipants().stream()
+                .anyMatch(p -> p.getId().getValue().equals(studentId));
+
+        if (!isParticipant) {
             throw new DomainException("Token does not belong to this student");
         }
 
@@ -102,7 +112,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         }
 
         session.start();
-        examSessionRepository.save(session);
+        // session already managed; changes auto-flushed
     }
 
     @Override
@@ -116,7 +126,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         }
 
         session.end();
-        examSessionRepository.save(session);
+        // session is already managed; changes auto-flushed
 
         return mapToDto(session);
     }
@@ -177,7 +187,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         }
 
         session.cancel();
-        examSessionRepository.save(session);
+        // session already managed; changes auto-flushed
     }
 
     @Override
@@ -200,10 +210,23 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                 .average()
                 .orElse(0.0) : 0.0;
 
+        List<String> participantIds = session.getParticipants() != null ?
+            session.getParticipants().stream()
+                .map(p -> p.getId().getValue())
+                .collect(Collectors.toList()) : List.of();
+
+        List<String> participantNames = session.getParticipants() != null ?
+            session.getParticipants().stream()
+                .map(p -> p.getFirstName() + " " + p.getLastName())
+                .collect(Collectors.toList()) : List.of();
+
         return ExamSessionDto.builder()
             .id(session.getId().getValue())
-            .studentId(session.getStudent().getId().getValue())
-            .studentName(session.getStudent().getFirstName() + " " + session.getStudent().getLastName())
+            .studentId(session.getStudent() != null ? session.getStudent().getId().getValue() : null)
+            .studentName(session.getStudent() != null ? session.getStudent().getFirstName() + " " + session.getStudent().getLastName() : null)
+            .participantIds(participantIds)
+            .participantNames(participantNames)
+            .groupName(session.getGroupName())
             .proctorId(session.getProctor().getId().getValue())
             .proctorName(session.getProctor().getFirstName() + " " + session.getProctor().getLastName())
             .disciplineCode(session.getDisciplineCode())

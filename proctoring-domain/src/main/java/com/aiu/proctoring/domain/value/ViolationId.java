@@ -1,13 +1,13 @@
 package com.aiu.proctoring.domain.value;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -19,8 +19,7 @@ import java.util.UUID;
 @ToString
 public class ViolationId implements Serializable {
 
-    @Convert(converter = UuidStringConverter.class)
-    @Column(name = "id", columnDefinition = "UUID")
+    @Column(name = "id", nullable = false)
     private final String value;
 
     protected ViolationId() {
@@ -28,7 +27,7 @@ public class ViolationId implements Serializable {
     }
 
     private ViolationId(String value) {
-        this.value = value;
+        this.value = Objects.requireNonNull(value, "ViolationId value cannot be null");
     }
 
     public static ViolationId generate() {

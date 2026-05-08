@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class ViolationDto {
     private String id;
     private String sessionId;
+    private String studentId;
     private String type;
     private Double confidence;
     private Long frameTimestamp;
