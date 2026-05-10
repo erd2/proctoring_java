@@ -35,16 +35,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (hasToken(header)) {
             String token = header.substring(7);
-            String username = jwtService.extractUsername(token);
+            try {
+                String username = jwtService.extractUsername(token);
 
-            if (StringUtils.hasText(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                try {
+                if (StringUtils.hasText(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                     jwtService.validateToken(token);
                     authenticateUser(userDetails, request);
-                } catch (JwtException e) {
-                    // Log debug or ignore; token invalid
                 }
+            } catch (JwtException e) {
+                // Invalid or expired JWT. Ignore and continue as anonymous access if permitted.
             }
         }
 
