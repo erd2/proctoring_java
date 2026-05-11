@@ -1,6 +1,7 @@
 package com.aiu.proctoring.application.service;
 
 import com.aiu.proctoring.application.dto.*;
+import com.aiu.proctoring.application.dto.ViolationDto;
 import com.aiu.proctoring.application.port.ExamSessionService;
 import com.aiu.proctoring.domain.exception.DomainException;
 import com.aiu.proctoring.domain.model.ExamSession;
@@ -125,10 +126,10 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             throw new DomainException("Only the assigned proctor can end this session");
         }
 
-        session.end();
-        // session is already managed; changes auto-flushed
+        ExamSessionDto dto = mapToDto(session);
+        examSessionRepository.delete(session);
 
-        return mapToDto(session);
+        return dto;
     }
 
     @Override
@@ -141,9 +142,14 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             .orElseThrow(() -> new DomainException("User not found"));
 
         // Check authorization
+        boolean isParticipant = session.getParticipants() != null &&
+            session.getParticipants().stream()
+                .anyMatch(p -> p.getId().getValue().equals(requesterId));
+
         if (!requester.getRole().equals(User.Role.ADMIN) &&
             !requester.getId().getValue().equals(session.getProctor().getId().getValue()) &&
-            !requester.getId().getValue().equals(session.getStudent().getId().getValue())) {
+            !requester.getId().getValue().equals(session.getStudent() != null ? session.getStudent().getId().getValue() : null) &&
+            !isParticipant) {
             throw new DomainException("Not authorized to view this session");
         }
 
@@ -172,8 +178,28 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         }
 
         return sessions.stream()
+            .sorted(this::compareSessions)
             .map(this::mapToDto)
             .collect(Collectors.toList());
+    }
+
+    private int compareSessions(ExamSession left, ExamSession right) {
+        List<ExamSession.Status> priority = List.of(
+            ExamSession.Status.CREATED,
+            ExamSession.Status.ACTIVE,
+            ExamSession.Status.COMPLETED,
+            ExamSession.Status.TERMINATED,
+            ExamSession.Status.CANCELLED
+        );
+
+        int leftIndex = priority.indexOf(left.getStatus());
+        int rightIndex = priority.indexOf(right.getStatus());
+
+        if (leftIndex != rightIndex) {
+            return Integer.compare(leftIndex, rightIndex);
+        }
+
+        return right.getCreatedAt().compareTo(left.getCreatedAt());
     }
 
     @Override
@@ -220,6 +246,25 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                 .map(p -> p.getFirstName() + " " + p.getLastName())
                 .collect(Collectors.toList()) : List.of();
 
+        List<ViolationDto> violationDtos = session.getViolations() != null ?
+            session.getViolations().stream()
+                .sorted((v1, v2) -> v2.getDetectedAt().compareTo(v1.getDetectedAt()))
+                .map(v -> ViolationDto.builder()
+                    .id(v.getId() != null ? v.getId().toString() : null)
+                    .sessionId(v.getSession().getId().getValue())
+                    .studentId(v.getStudent().getId().getValue())
+                    .type(v.getType())
+                    .confidence(v.getConfidence())
+                    .frameTimestamp(v.getFrameTimestamp())
+                    .description(v.getDescription())
+                    .detectedAt(v.getDetectedAt())
+                    .reviewedBy(v.getReviewedBy())
+                    .reviewedAt(v.getReviewedAt())
+                    .isFalsePositive(v.getIsFalsePositive())
+                    .notes(v.getNotes())
+                    .build())
+                .collect(Collectors.toList()) : List.of();
+
         return ExamSessionDto.builder()
             .id(session.getId().getValue())
             .studentId(session.getStudent() != null ? session.getStudent().getId().getValue() : null)
@@ -241,6 +286,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             .averageConfidence(avgConfidence)
             .aiModelUsed(session.getAiModelUsed())
             .createdAt(session.getCreatedAt())
+            .violations(violationDtos)
             .build();
     }
 }

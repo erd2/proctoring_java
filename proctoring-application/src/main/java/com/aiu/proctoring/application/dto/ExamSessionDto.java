@@ -1,5 +1,6 @@
 package com.aiu.proctoring.application.dto;
 
+import com.aiu.proctoring.application.dto.ViolationDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,4 +37,5 @@ public class ExamSessionDto {
     private Double averageConfidence;
     private String aiModelUsed;
     private LocalDateTime createdAt;
+    private List<ViolationDto> violations;
 }
